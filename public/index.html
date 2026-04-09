@@ -332,8 +332,8 @@ async function searchByJD(){
   if(!jd){showToast("Please enter a job description");return}
   
   // Find relevant bucket from JD
-  const relevantResumes=state.resumes.filter(r=>r.resumeText&&r.resumeText.length>50);
-  if(!relevantResumes.length){showToast("No resumes in library to search");return}
+  const relevantResumes=state.resumes.filter(r=>r.resumeText&&r.resumeText.length>10);
+  if(!relevantResumes.length){showToast("No resumes in library to search — upload PDFs or load demo data first");return}
 
   state.searching=true;
   state.searchResults=[];
