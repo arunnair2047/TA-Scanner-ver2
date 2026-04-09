@@ -1,0 +1,13 @@
+{
+  "name": "ta-screener-v2",
+  "version": "2.0.0",
+  "description": "Talent Acquisition Screening Tool v2 - Global Resume Library with JD Search",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0"
+  }
+}
