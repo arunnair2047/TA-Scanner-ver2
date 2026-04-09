@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TA Screener</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f3;--surface:#ffffff;--surface2:#f0efe9;--surface3:#e8e7e0;
+  --border:#e2e0d8;--border2:#ccc9be;--text:#1a1916;--text2:#65635d;--text3:#9c9a94;
+  --blue:#1a5fa8;--blue-bg:#e5f0fb;--blue-border:#aed0f5;
+  --green:#3a6d10;--green-bg:#eaf2dd;--green-border:#b5d88a;
+  --amber:#7d4a0a;--amber-bg:#faecd8;--amber-border:#f0c070;
+  --red:#9e2c2c;--red-bg:#fceaea;--red-border:#f0a0a0;
+  --purple:#4a42b0;--purple-bg:#edeefe;--purple-border:#c0bcf5;
+  --gray:#5c5a55;--gray-bg:#efede6;
+  --radius:10px;--radius-sm:6px;--radius-xs:4px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+#app{max-width:960px;margin:0 auto;padding:24px 20px}
+
+/* Typography */
+h1{font-size:21px;font-weight:600;color:var(--text)}
+h2{font-size:16px;font-weight:600;color:var(--text)}
+h3{font-size:13px;font-weight:600;color:var(--text)}
+.muted{color:var(--text2);font-size:13px}
+.hint{color:var(--text3);font-size:12px}
+
+/* Buttons */
+button,.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--surface);font-size:13px;font-weight:500;cursor:pointer;color:var(--text);transition:background 0.15s,border-color 0.15s;font-family:inherit}
+button:hover,.btn:hover{background:var(--surface2);border-color:var(--text3)}
+button:disabled{opacity:0.45;cursor:not-allowed;pointer-events:none}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:#174f90}
+.btn-demo{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border)}
+.btn-demo:hover{background:#f0dfc0}
+.btn-danger{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--text2)}
+.btn-ghost:hover{background:var(--surface2);border-color:var(--border)}
+.btn-disabled{opacity:0.4;cursor:not-allowed;pointer-events:none;background:var(--surface2);color:var(--text3);border-color:var(--border)}
+
+/* Inputs */
+input,textarea,select{width:100%;padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;transition:border-color 0.15s}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--blue)}
+textarea{resize:vertical;min-height:80px}
+select{cursor:pointer}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px}
+.card-hover{cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s}
+.card-hover:hover{border-color:var(--border2);box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+
+/* Pills */
+.pill{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;white-space:nowrap;line-height:1.6}
+.pill-blue{background:var(--blue-bg);color:var(--blue)}
+.pill-green{background:var(--green-bg);color:var(--green)}
+.pill-amber{background:var(--amber-bg);color:var(--amber)}
+.pill-red{background:var(--red-bg);color:var(--red)}
+.pill-purple{background:var(--purple-bg);color:var(--purple)}
+.pill-gray{background:var(--gray-bg);color:var(--gray)}
+.pill-demo{background:var(--amber-bg);color:var(--amber);font-size:10px;padding:1px 6px;border-radius:4px}
+.pill-xs{font-size:10px;padding:1px 6px}
+
+/* Nav */
+.nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;margin-bottom:0;position:sticky;top:0;z-index:100}
+.nav-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:0}
+.nav-brand{font-size:15px;font-weight:700;color:var(--text);padding:14px 20px 14px 0;border-right:1px solid var(--border);margin-right:8px;letter-spacing:-0.3px}
+.nav-tab{padding:14px 16px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;background:none;border-radius:0;transition:color 0.15s}
+.nav-tab:hover{color:var(--text);background:none}
+.nav-tab.active{color:var(--text);border-bottom-color:var(--blue)}
+
+/* Metrics */
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.metric{background:var(--surface2);border-radius:var(--radius-sm);padding:14px}
+.metric-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
+.metric-value{font-size:22px;font-weight:700;color:var(--text)}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
+.tab{padding:8px 0 10px;margin-right:24px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;color:var(--text2);background:none;border-radius:0;font-weight:500;transition:color 0.15s}
+.tab:hover{color:var(--text);background:none}
+.tab.active{color:var(--text);border-bottom-color:var(--text)}
+
+/* Resume library */
+.resume-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden}
+.resume-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer}
+.resume-header:hover{background:var(--bg)}
+.resume-detail{border-top:1px solid var(--border);padding:14px 16px;display:none}
+.resume-detail.open{display:block}
+
+/* Search results */
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden}
+.result-card.top10{border:2px solid var(--blue-border)}
+.result-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer}
+.result-header:hover{background:var(--bg)}
+.result-detail{border-top:1px solid var(--border);padding:14px 16px;display:none}
+.result-detail.open{display:block}
+
+/* Breakdown */
+.breakdown-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.breakdown-cell{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px}
+.breakdown-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px}
+.breakdown-score{font-size:18px;font-weight:700;margin-bottom:4px}
+.breakdown-notes{font-size:11px;color:var(--text2);line-height:1.4}
+.sg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.sg-box{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px}
+.sg-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;color:var(--text2)}
+.sg-item{font-size:12px;color:var(--text2);margin-bottom:4px;line-height:1.4}
+
+/* Pipeline */
+.pipeline-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px}
+.pipeline-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:6px}
+.pipeline-item-info{flex:1;min-width:0}
+.pipeline-item-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pipeline-item-sub{font-size:11px;color:var(--text2);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+
+/* Batch status */
+.batch-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:6px;font-size:13px}
+.batch-status{font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.bs-queued{background:var(--gray-bg);color:var(--gray)}
+.bs-processing{background:var(--blue-bg);color:var(--blue)}
+.bs-done{background:var(--green-bg);color:var(--green)}
+.bs-failed{background:var(--red-bg);color:var(--red)}
+
+/* Bucket tags */
+.bucket-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;background:var(--purple-bg);color:var(--purple);margin:2px}
+.bucket-tag .remove{cursor:pointer;opacity:0.6;font-size:12px;line-height:1}
+.bucket-tag .remove:hover{opacity:1}
+
+/* Upload area */
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--radius);padding:32px;text-align:center;cursor:pointer;transition:border-color 0.15s,background 0.15s}
+.upload-zone:hover{border-color:var(--blue);background:var(--blue-bg)}
+.upload-btn-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+
+/* History */
+.history-item{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.history-time{font-size:11px;color:var(--text3);min-width:150px}
+
+/* Status row */
+.status-row{display:flex;align-items:center;gap:8px}
+.status-row label{font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap}
+.status-row select{width:auto;font-size:12px}
+
+/* Search box */
+.search-box{border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.search-box-header{padding:14px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.search-box-body{padding:16px}
+
+/* Empty */
+.empty{border:1.5px dashed var(--border2);border-radius:var(--radius);padding:40px;text-align:center}
+
+/* Divider */
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* Form */
+.form-stack{display:flex;flex-direction:column;gap:10px}
+.form-row{display:flex;gap:8px}
+.form-label{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:4px}
+
+/* Upstream disabled banner */
+.upstream-banner{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:12px}
+.upstream-banner-text{flex:1;font-size:12px;color:var(--text3)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:10px 16px;border-radius:var(--radius-sm);font-size:13px;display:none;z-index:999;max-width:300px}
+.toast.show{display:block}
+
+/* Page header */
+.page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+.page-actions{display:flex;gap:8px;align-items:center}
+
+@media(max-width:600px){
+  .metric-grid{grid-template-columns:repeat(2,1fr)}
+  .breakdown-grid{grid-template-columns:repeat(2,1fr)}
+  .sg-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">TA Screener</span>
+    <button class="nav-tab active" data-nav="library">Resume Library</button>
+    <button class="nav-tab" data-nav="search">Search by JD</button>
+    <button class="nav-tab" data-nav="pipeline">Pipeline</button>
+    <button class="nav-tab" data-nav="buckets">Buckets</button>
+  </div>
+</nav>
+
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+// ─── Constants ────────────────────────────────────────────────────
+const STATUSES = ["Applied","Screening Done","First Interview Scheduled","First Interview Done","Final Interview Scheduled","Final Interview Done","Offer Made","Rejected"];
+const REC_PILL = {"Strong Hire":"pill-green","Hire":"pill-blue","Maybe":"pill-amber","No Hire":"pill-red"};
+const STATUS_PILL = {"Applied":"pill-gray","Screening Done":"pill-blue","First Interview Scheduled":"pill-purple","First Interview Done":"pill-purple","Final Interview Scheduled":"pill-amber","Final Interview Done":"pill-amber","Offer Made":"pill-green","Rejected":"pill-red"};
+const BATCH_LIMIT = 50;
+
+// ─── State ────────────────────────────────────────────────────────
+let state = {
+  nav: "library",
+  buckets: ["OSS","BSS","Billing","Contracts","Network Engineering","Cloud","Project Management"],
+  resumes: [],
+  searchResults: [],
+  searchJD: "",
+  searchTitle: "",
+  searching: false,
+  searchProgress: 0,
+  expanded: null,
+  resultExpanded: null,
+  uploadExpanded: null,
+  batchQueue: [],
+  processingBatch: false,
+  tab: "candidates"
+};
+
+// ─── Demo data ────────────────────────────────────────────────────
+const DEMO_RESUMES = [
+  {id:"r01",candidateName:"Rajesh Kumar",filename:"Rajesh_Kumar_Resume.pdf",buckets:["OSS"],primaryDomain:"OSS/Service Assurance architect with Ericsson background",status:"Offer Made",uploadedAt:"2025-03-03T09:00:00Z",resumeText:"Senior Solution Architect with 11 years OSS architecture experience at Ericsson Global. Expert in Netcracker NRM, Smarts, ENIQ. Led service assurance and NMS programmes across UK and Europe.",statusHistory:[{status:"Applied",timestamp:"2025-03-03T09:00:00Z"},{status:"Offer Made",timestamp:"2025-03-24T11:00:00Z"}],score:null},
+  {id:"r02",candidateName:"Priya Subramaniam",filename:"Priya_Subramaniam_CV.pdf",buckets:["OSS","BSS"],primaryDomain:"Principal OSS/BSS architect with TMF API expertise",status:"Final Interview Done",uploadedAt:"2025-03-05T10:00:00Z",resumeText:"Principal Architect at TCS with 12 years delivering OSS and BSS integration for Vodafone and Airtel. Proficient in Netcracker, Assure1, TMF Open APIs. Led multi-operator programmes.",statusHistory:[{status:"Applied",timestamp:"2025-03-05T10:00:00Z"},{status:"Final Interview Done",timestamp:"2025-03-21T16:00:00Z"}],score:null},
+  {id:"r03",candidateName:"Arjun Mehta",filename:"Arjun_Mehta_Resume.pdf",buckets:["OSS"],primaryDomain:"Network solution architect with BT and EE experience",status:"Final Interview Scheduled",uploadedAt:"2025-03-06T09:00:00Z",resumeText:"Senior Architect at Infosys with 10 years network solution architecture. Hands-on with ENIQ, Smarts, Ericsson OSS stack. Worked directly on BT and EE programmes.",statusHistory:[{status:"Applied",timestamp:"2025-03-06T09:00:00Z"},{status:"Final Interview Scheduled",timestamp:"2025-03-22T09:00:00Z"}],score:null},
+  {id:"r04",candidateName:"Neha Joshi",filename:"Neha_Joshi_CV.pdf",buckets:["OSS","BSS"],primaryDomain:"TM Forum certified OSS/BSS integration specialist",status:"First Interview Done",uploadedAt:"2025-03-04T09:00:00Z",resumeText:"Principal Consultant at Wipro with 9 years OSS and BSS integration. TM Forum certified. Delivered OSS integration at Openreach. Strong design governance and documentation skills.",statusHistory:[{status:"Applied",timestamp:"2025-03-04T09:00:00Z"},{status:"First Interview Done",timestamp:"2025-03-16T15:00:00Z"}],score:null},
+  {id:"r05",candidateName:"Sneha Kapoor",filename:"Sneha_Kapoor_CV.pdf",buckets:["BSS"],primaryDomain:"BSS solution designer with multi-operator delivery experience",status:"First Interview Done",uploadedAt:"2025-03-07T08:00:00Z",resumeText:"Solution designer with 9 years in BSS integration for tier-1 operators. Expertise in TMF, REST API design and Amdocs platforms. Managed delivery across 3 operators simultaneously.",statusHistory:[{status:"Applied",timestamp:"2025-03-07T08:00:00Z"},{status:"First Interview Done",timestamp:"2025-03-17T14:00:00Z"}],score:null},
+  {id:"r06",candidateName:"Rahul Nair",filename:"Rahul_Nair_Application.pdf",buckets:["OSS","Cloud"],primaryDomain:"TOGAF-certified integration architect with Azure telecom experience",status:"First Interview Scheduled",uploadedAt:"2025-03-08T10:00:00Z",resumeText:"TOGAF 9 certified architect with 8 years in integration architecture across telecom and enterprise. Strong API governance and Azure integration for telecom workloads.",statusHistory:[{status:"Applied",timestamp:"2025-03-08T10:00:00Z"},{status:"First Interview Scheduled",timestamp:"2025-03-18T10:00:00Z"}],score:null},
+  {id:"r07",candidateName:"Sunita Rao",filename:"Sunita_Rao_CV.pdf",buckets:["OSS"],primaryDomain:"Pre-sales and solution design hybrid with Colt and BT experience",status:"Screening Done",uploadedAt:"2025-03-11T11:00:00Z",resumeText:"Solution Architect with 8 years split between OSS delivery and pre-sales. Worked across Colt and BT accounts. Strong commercial awareness and client engagement skills.",statusHistory:[{status:"Applied",timestamp:"2025-03-11T11:00:00Z"},{status:"Screening Done",timestamp:"2025-03-14T09:00:00Z"}],score:null},
+  {id:"r08",candidateName:"Vikram Shetty",filename:"Vikram_Shetty_Resume.pdf",buckets:["OSS"],primaryDomain:"Telecom engineer transitioning to solution architecture",status:"Screening Done",uploadedAt:"2025-03-10T11:00:00Z",resumeText:"Senior engineer with 7 years at Jio and Vi with strong fault management and OSS operations experience. Transitioning to architecture role. Good understanding of OSS stack.",statusHistory:[{status:"Applied",timestamp:"2025-03-10T11:00:00Z"},{status:"Screening Done",timestamp:"2025-03-13T14:00:00Z"}],score:null},
+  {id:"r09",candidateName:"Divya Krishnan",filename:"Divya_Krishnan_CV.pdf",buckets:["Network Engineering","Cloud"],primaryDomain:"Network automation specialist with Cisco NSO expertise",status:"Applied",uploadedAt:"2025-03-09T09:00:00Z",resumeText:"Network automation architect with 9 years on AWS/Azure cloud workloads and Cisco NSO. AWS certified solutions architect. Strong on microservices and event-driven patterns.",statusHistory:[{status:"Applied",timestamp:"2025-03-09T09:00:00Z"}],score:null},
+  {id:"r10",candidateName:"Ananya Iyer",filename:"Ananya_Iyer_CV.pdf",buckets:["Cloud","BSS"],primaryDomain:"Enterprise integration architect with MuleSoft and Kafka expertise",status:"Applied",uploadedAt:"2025-03-12T10:00:00Z",resumeText:"Integration architect with 8 years in enterprise and banking integration. Expert in MuleSoft, Kafka and API governance. Strong integration architecture fundamentals.",statusHistory:[{status:"Applied",timestamp:"2025-03-12T10:00:00Z"}],score:null},
+  {id:"r11",candidateName:"Karan Malhotra",filename:"Karan_Malhotra_Application.pdf",buckets:["BSS","Billing"],primaryDomain:"ITIL service management specialist with ticketing integration background",status:"Applied",uploadedAt:"2025-03-13T08:00:00Z",resumeText:"Service management specialist with 7 years in ITIL process governance, incident and change management, and ticketing system integrations for telecom operators.",statusHistory:[{status:"Applied",timestamp:"2025-03-13T08:00:00Z"}],score:null},
+  {id:"r12",candidateName:"Meera Pillai",filename:"Meera_Pillai_CV.pdf",buckets:["Cloud"],primaryDomain:"Java backend developer with some API development experience",status:"Rejected",uploadedAt:"2025-03-15T10:00:00Z",resumeText:"Software developer with 6 years in Java backend development and REST API development. No telecom domain experience. Limited architecture ownership.",statusHistory:[{status:"Applied",timestamp:"2025-03-15T10:00:00Z"},{status:"Rejected",timestamp:"2025-03-16T09:00:00Z"}],score:null},
+  {id:"r13",candidateName:"Suresh Babu",filename:"Suresh_Babu_Resume.pdf",buckets:["Network Engineering"],primaryDomain:"Junior network operations engineer",status:"Rejected",uploadedAt:"2025-03-16T11:00:00Z",resumeText:"Network operations engineer with 5 years at telecom operator level. CCNA certified. Handles day-to-day network operations but has no architecture or design experience.",statusHistory:[{status:"Applied",timestamp:"2025-03-16T11:00:00Z"},{status:"Rejected",timestamp:"2025-03-17T10:00:00Z"}],score:null},
+  {id:"r14",candidateName:"Aditya Sharma",filename:"Aditya_Sharma_CV.pdf",buckets:["Billing","BSS"],primaryDomain:"Billing systems architect with Amdocs and Comverse experience",status:"Applied",uploadedAt:"2025-03-17T09:00:00Z",resumeText:"Billing systems architect with 10 years specialising in Amdocs and Comverse billing platforms. Deep expertise in revenue assurance, mediation, and billing integration for tier-1 operators.",statusHistory:[{status:"Applied",timestamp:"2025-03-17T09:00:00Z"}],score:null},
+  {id:"r15",candidateName:"Pooja Menon",filename:"Pooja_Menon_CV.pdf",buckets:["Contracts","Project Management"],primaryDomain:"Telecom contracts and commercial manager",status:"Applied",uploadedAt:"2025-03-18T10:00:00Z",resumeText:"Commercial and contracts manager with 8 years in telecom vendor contracts, SLA management and commercial governance for large infrastructure programmes at BT and Openreach.",statusHistory:[{status:"Applied",timestamp:"2025-03-18T10:00:00Z"}],score:null}
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────
+function fmtDate(iso){if(!iso)return"—";return new Date(iso).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
+function fmtDateTime(iso){if(!iso)return"—";return new Date(iso).toLocaleDateString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}
+function pill(text,cls){return`<span class="pill ${cls}">${text}</span>`}
+function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2800)}
+function sortByScore(list){return[...list].sort((a,b)=>(b.score?.totalScore||0)-(a.score?.totalScore||0))}
+
+// ─── Data API ─────────────────────────────────────────────────────
+async function loadData(){
+  try{
+    const r=await fetch("/api/data");
+    const d=await r.json();
+    state.buckets=d.buckets||state.buckets;
+    state.resumes=d.resumes||[];
+  }catch(e){console.error(e)}
+}
+async function saveResumes(){
+  await fetch("/api/data",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({resumes:state.resumes})});
+}
+async function saveBuckets(){
+  await fetch("/api/data",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({buckets:state.buckets})});
+}
+
+// ─── PDF extraction ───────────────────────────────────────────────
+async function extractPdfText(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=async(e)=>{
+      try{
+        const pdf=await pdfjsLib.getDocument({data:new Uint8Array(e.target.result)}).promise;
+        let text="";
+        for(let i=1;i<=Math.min(pdf.numPages,5);i++){
+          const page=await pdf.getPage(i);
+          const content=await page.getTextContent();
+          text+=content.items.map(x=>x.str).join(" ")+"\n";
+        }
+        resolve(text.trim());
+      }catch(err){reject(err)}
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ─── Upload handler ───────────────────────────────────────────────
+async function handleUpload(files){
+  if(!files.length)return;
+  const over50=state.resumes.length+files.length>BATCH_LIMIT;
+  if(over50){
+    // Add to batch queue
+    const newItems=Array.from(files).map(f=>({id:`b${Date.now()}_${Math.random()}`,filename:f.name,file:f,status:"queued"}));
+    state.batchQueue=[...state.batchQueue,...newItems];
+    render();
+    showToast(`${files.length} files queued for batch processing`);
+    return;
+  }
+  // Real-time processing
+  for(let i=0;i<files.length;i++){
+    const file=files[i];
+    showToast(`Processing ${i+1}/${files.length}: ${file.name}`);
+    try{
+      const text=await extractPdfText(file);
+      // Auto-categorise
+      let catResult={candidateName:file.name.replace(".pdf",""),suggestedBuckets:[],primaryDomain:""};
+      try{
+        const r=await fetch("/api/categorise",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({resumeText:text,buckets:state.buckets})});
+        if(r.ok)catResult=await r.json();
+      }catch(e){}
+      const resume={
+        id:`r${Date.now()}_${i}`,
+        candidateName:catResult.candidateName||file.name.replace(".pdf",""),
+        filename:file.name,
+        buckets:catResult.suggestedBuckets||[],
+        primaryDomain:catResult.primaryDomain||"",
+        status:"Applied",
+        uploadedAt:new Date().toISOString(),
+        resumeText:text,
+        statusHistory:[{status:"Applied",timestamp:new Date().toISOString()}],
+        score:null
+      };
+      state.resumes=[...state.resumes,resume];
+      await saveResumes();
+      render();
+    }catch(err){console.error(err);showToast(`Failed: ${file.name}`)}
+  }
+  showToast(`Upload complete`);
+}
+
+// ─── Search by JD ─────────────────────────────────────────────────
+async function searchByJD(){
+  const jd=state.searchJD.trim();
+  if(!jd){showToast("Please enter a job description");return}
+  
+  // Find relevant bucket from JD
+  const relevantResumes=state.resumes.filter(r=>r.resumeText&&r.resumeText.length>50);
+  if(!relevantResumes.length){showToast("No resumes in library to search");return}
+
+  state.searching=true;
+  state.searchResults=[];
+  state.searchProgress=0;
+  render();
+
+  const results=[];
+  for(let i=0;i<relevantResumes.length;i++){
+    const resume=relevantResumes[i];
+    state.searchProgress=Math.round(((i+1)/relevantResumes.length)*100);
+    // Update progress without full re-render
+    const prog=document.getElementById("search-progress");
+    const progBar=document.getElementById("search-progress-bar");
+    const progMsg=document.getElementById("search-progress-msg");
+    if(prog)prog.style.display="block";
+    if(progBar)progBar.style.width=state.searchProgress+"%";
+    if(progMsg)progMsg.textContent=`Scoring ${i+1} of ${relevantResumes.length}: ${resume.candidateName}`;
+
+    try{
+      const r=await fetch("/api/score",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({resumeText:resume.resumeText,jd,jobTitle:state.searchTitle||"Not specified"})});
+      if(r.ok){
+        const score=await r.json();
+        results.push({...resume,score});
+      }
+    }catch(e){console.error(e)}
+  }
+
+  state.searchResults=sortByScore(results);
+  state.searching=false;
+  render();
+  showToast(`Search complete — ${results.length} candidates scored`);
+}
+
+// ─── Status update ────────────────────────────────────────────────
+async function updateStatus(resumeId,newStatus){
+  state.resumes=state.resumes.map(r=>r.id!==resumeId?r:{
+    ...r,status:newStatus,
+    statusHistory:[...(r.statusHistory||[]),{status:newStatus,timestamp:new Date().toISOString()}]
+  });
+  await saveResumes();
+  render();
+}
+
+async function updateBuckets(resumeId,buckets){
+  state.resumes=state.resumes.map(r=>r.id!==resumeId?r:{...r,buckets});
+  await saveResumes();
+}
+
+// ─── Demo loader ──────────────────────────────────────────────────
+async function loadDemo(){
+  state.resumes=DEMO_RESUMES;
+  await saveResumes();
+  render();
+  showToast("Demo data loaded — 15 candidates in library");
+}
+
+// ─── Render ────────────────────────────────────────────────────────
+function render(){
+  document.querySelectorAll(".nav-tab").forEach(t=>{
+    t.classList.toggle("active",t.dataset.nav===state.nav);
+  });
+  const app=document.getElementById("app");
+  app.style.padding="24px 20px";
+  if(state.nav==="library")app.innerHTML=renderLibrary();
+  else if(state.nav==="search")app.innerHTML=renderSearch();
+  else if(state.nav==="pipeline")app.innerHTML=renderPipeline();
+  else if(state.nav==="buckets")app.innerHTML=renderBuckets();
+  attachHandlers();
+}
+
+// ─── Library view ─────────────────────────────────────────────────
+function renderLibrary(){
+  const total=state.resumes.length;
+  const bucketCounts=state.buckets.reduce((acc,b)=>{acc[b]=state.resumes.filter(r=>r.buckets?.includes(b)).length;return acc},{});
+
+  return`
+    <div class="page-header">
+      <div>
+        <h1>Resume library</h1>
+        <p class="muted" style="margin-top:4px">${total} candidate${total!==1?"s":""} across all buckets</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn-demo" id="btn-demo">Load demo data</button>
+        <input type="file" id="file-input" accept=".pdf" multiple style="display:none"/>
+        <label for="file-input" class="btn" style="cursor:pointer">Upload resumes</label>
+      </div>
+    </div>
+
+    <div class="upstream-banner">
+      <span style="font-size:13px">🔗</span>
+      <span class="upstream-banner-text">Fetch from upstream ATS (Workday, Greenhouse, SuccessFactors) — integration available on request</span>
+      <button class="btn-disabled" style="font-size:12px;padding:5px 12px">Fetch from ATS</button>
+    </div>
+
+    ${state.batchQueue.length>0?renderBatchQueue():""}
+
+    <div class="tabs">
+      <button class="tab ${state.tab==="candidates"?"active":""}" data-tab="candidates">All resumes (${total})</button>
+      ${state.buckets.map(b=>`<button class="tab ${state.tab===b?"active":""}" data-tab="${b}">${b} (${bucketCounts[b]||0})</button>`).join("")}
+    </div>
+
+    ${renderResumeList()}
+  `;
+}
+
+function renderBatchQueue(){
+  return`
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h3>Batch queue — ${state.batchQueue.length} files</h3>
+        <button id="btn-process-batch" class="btn-primary" style="font-size:12px" ${state.processingBatch?"disabled":""}>
+          ${state.processingBatch?"Processing...":"Process batch"}
+        </button>
+      </div>
+      ${state.batchQueue.map(item=>`
+        <div class="batch-item">
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.filename}</span>
+          <span class="batch-status bs-${item.status}">${item.status}</span>
+        </div>
+      `).join("")}
+      <p class="hint" style="margin-top:8px">Batch processing runs files in background. You can continue using the app.</p>
+    </div>
+  `;
+}
+
+function renderResumeList(){
+  const filtered=state.tab==="candidates"?state.resumes:state.resumes.filter(r=>r.buckets?.includes(state.tab));
+  if(!filtered.length)return`<div class="empty"><p class="muted">No resumes${state.tab!=="candidates"?` in ${state.tab} bucket`:""} yet.</p></div>`;
+
+  return filtered.map(r=>{
+    const isExp=state.expanded===r.id;
+    const stCls=STATUS_PILL[r.status]||"pill-gray";
+    return`
+      <div class="resume-card">
+        <div class="resume-header" data-expand="${r.id}">
+          <div style="flex:1;min-width:0">
+            <p style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.candidateName}</p>
+            <p class="hint" style="margin-top:2px">${r.filename}</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
+            ${(r.buckets||[]).map(b=>`<span class="pill pill-purple pill-xs">${b}</span>`).join("")}
+            ${pill(r.status,stCls)}
+            <span style="font-size:10px;color:var(--text3);transform:${isExp?"rotate(180deg)":"none"};display:inline-block;transition:transform 0.2s">▾</span>
+          </div>
+        </div>
+        <div class="resume-detail ${isExp?"open":""}">
+          <p class="hint" style="margin-bottom:12px">${r.primaryDomain||"No domain summary"}</p>
+          <div style="margin-bottom:12px">
+            <div class="form-label">Domain buckets</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+              ${(r.buckets||[]).map(b=>`<span class="bucket-tag">${b}<span class="remove" data-remove-bucket="${r.id}" data-bucket="${b}">×</span></span>`).join("")}
+              ${r.buckets?.length===0?`<span class="hint">No buckets assigned</span>`:""}
+            </div>
+            <select data-add-bucket="${r.id}" style="width:auto;font-size:12px">
+              <option value="">+ Add to bucket</option>
+              ${state.buckets.filter(b=>!r.buckets?.includes(b)).map(b=>`<option value="${b}">${b}</option>`).join("")}
+            </select>
+          </div>
+          <div class="divider"></div>
+          <div style="margin-bottom:10px">
+            <div class="form-label" style="margin-bottom:6px">Interview history</div>
+            ${(r.statusHistory||[]).map(h=>`
+              <div class="history-item">
+                <span class="history-time">${fmtDateTime(h.timestamp)}</span>
+                ${pill(h.status,STATUS_PILL[h.status]||"pill-gray")}
+              </div>
+            `).join("")}
+          </div>
+          <div class="status-row">
+            <label>Update status:</label>
+            <select data-status-id="${r.id}">
+              ${STATUSES.map(s=>`<option value="${s}"${r.status===s?" selected":""}>${s}</option>`).join("")}
+            </select>
+          </div>
+          <p class="hint" style="margin-top:8px">Uploaded ${fmtDate(r.uploadedAt)}</p>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ─── Search view ──────────────────────────────────────────────────
+function renderSearch(){
+  const hasResults=state.searchResults.length>0;
+  const top10ids=new Set(state.searchResults.slice(0,10).map(r=>r.id));
+  const avgScore=hasResults?Math.round(state.searchResults.reduce((s,r)=>s+(r.score?.totalScore||0),0)/state.searchResults.length):0;
+  const strongHires=state.searchResults.filter(r=>r.score?.recommendation==="Strong Hire").length;
+
+  return`
+    <div class="page-header">
+      <div>
+        <h1>Search by JD</h1>
+        <p class="muted" style="margin-top:4px">Score all resumes in the library against a job description</p>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <div class="search-box-header">
+        <h3>Job description</h3>
+        ${hasResults?`<span class="hint">Last search: ${state.searchResults.length} candidates scored</span>`:""}
+      </div>
+      <div class="search-box-body">
+        <div class="form-stack">
+          <div>
+            <div class="form-label">Job title (optional)</div>
+            <input id="search-title" placeholder="e.g. Senior Solution Architect" value="${state.searchTitle||""}"/>
+          </div>
+          <div>
+            <div class="form-label">Job description *</div>
+            <textarea id="search-jd" rows="6" placeholder="Paste the full job description here — the more detail, the better the scoring accuracy">${state.searchJD||""}</textarea>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button id="btn-search" class="btn-primary" ${state.searching||!state.resumes.length?"disabled":""}>
+              ${state.searching?"Scoring...":"Search resumes"}
+            </button>
+            <span class="hint">${state.resumes.length} resume${state.resumes.length!==1?"s":""} in library</span>
+          </div>
+        </div>
+
+        <div id="search-progress" style="display:${state.searching?"block":"none"};margin-top:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span id="search-progress-msg" class="hint">Scoring...</span>
+            <span class="hint">${state.searchProgress}%</span>
+          </div>
+          <div style="height:4px;background:var(--surface3);border-radius:2px;overflow:hidden">
+            <div id="search-progress-bar" style="height:100%;background:var(--blue);border-radius:2px;transition:width 0.3s;width:${state.searchProgress}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${hasResults?`
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-label">Candidates scored</div><div class="metric-value">${state.searchResults.length}</div></div>
+        <div class="metric"><div class="metric-label">Top 10 cutoff</div><div class="metric-value">${state.searchResults.length>=10?state.searchResults[9]?.score?.totalScore+"+":`${state.searchResults[state.searchResults.length-1]?.score?.totalScore}+`}</div></div>
+        <div class="metric"><div class="metric-label">Strong hires</div><div class="metric-value">${strongHires}</div></div>
+        <div class="metric"><div class="metric-label">Avg score</div><div class="metric-value">${avgScore}/100</div></div>
+      </div>
+      ${state.searchResults.map((r,idx)=>{
+        const isTop=top10ids.has(r.id);
+        const isExp=state.resultExpanded===r.id;
+        const recCls=REC_PILL[r.score?.recommendation]||"pill-amber";
+        const stCls=STATUS_PILL[r.status]||"pill-gray";
+        return`
+          <div class="result-card ${isTop?"top10":""}">
+            <div class="result-header" data-result-expand="${r.id}">
+              <span style="font-size:12px;font-weight:600;color:var(--text3);min-width:26px">#${idx+1}</span>
+              <div style="flex:1;min-width:0">
+                <p style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.candidateName}</p>
+                <p class="hint" style="margin-top:1px">${r.filename}</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+                ${isTop?pill("Top 10","pill-blue"):""}
+                ${pill(r.score?.recommendation,recCls)}
+                ${pill(r.status,stCls)}
+                <span style="font-size:20px;font-weight:700;min-width:36px;text-align:right">${r.score?.totalScore}</span>
+                <span style="font-size:10px;color:var(--text3);transform:${isExp?"rotate(180deg)":"none"};display:inline-block;transition:transform 0.2s">▾</span>
+              </div>
+            </div>
+            <div class="result-detail ${isExp?"open":""}">
+              <div class="breakdown-grid">
+                ${Object.entries(r.score?.breakdown||{}).map(([key,val])=>`
+                  <div class="breakdown-cell">
+                    <div class="breakdown-label">${key.replace(/([A-Z])/g," $1").trim()}</div>
+                    <div class="breakdown-score">${val.score}<span style="font-size:11px;font-weight:400;color:var(--text3)">/25</span></div>
+                    <div class="breakdown-notes">${val.notes}</div>
+                  </div>
+                `).join("")}
+              </div>
+              <div class="sg-grid">
+                <div class="sg-box">
+                  <div class="sg-title">Strengths</div>
+                  ${(r.score?.strengths||[]).map(s=>`<div class="sg-item">✓ ${s}</div>`).join("")}
+                </div>
+                <div class="sg-box">
+                  <div class="sg-title">Gaps</div>
+                  ${(r.score?.gaps||[]).map(g=>`<div class="sg-item">✗ ${g}</div>`).join("")}
+                </div>
+              </div>
+              <div class="divider"></div>
+              <div style="margin-bottom:10px">
+                <div class="form-label" style="margin-bottom:6px">Interview history</div>
+                ${(r.statusHistory||[]).map(h=>`
+                  <div class="history-item">
+                    <span class="history-time">${fmtDateTime(h.timestamp)}</span>
+                    ${pill(h.status,STATUS_PILL[h.status]||"pill-gray")}
+                  </div>
+                `).join("")}
+              </div>
+              <div class="status-row">
+                <label>Update status:</label>
+                <select data-status-id="${r.id}">
+                  ${STATUSES.map(s=>`<option value="${s}"${r.status===s?" selected":""}>${s}</option>`).join("")}
+                </select>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("")}
+    `:`
+      <div class="empty">
+        <p class="muted" style="margin-bottom:6px">Paste a JD above and click Search resumes</p>
+        <p class="hint">Claude will score every resume in the library against your JD in real time</p>
+      </div>
+    `}
+  `;
+}
+
+// ─── Pipeline view ────────────────────────────────────────────────
+function renderPipeline(){
+  const groups=STATUSES.reduce((acc,s)=>{acc[s]=state.resumes.filter(r=>r.status===s);return acc},{});
+  const total=state.resumes.length;
+
+  return`
+    <div class="page-header">
+      <div>
+        <h1>Interview pipeline</h1>
+        <p class="muted" style="margin-top:4px">${total} candidate${total!==1?"s":""} across all stages</p>
+      </div>
+    </div>
+    ${total===0?`<div class="empty"><p class="muted">No candidates yet. Upload resumes in the library first.</p></div>`:""}
+    ${STATUSES.map(status=>{
+      const group=groups[status];
+      if(!group.length)return"";
+      const stCls=STATUS_PILL[status]||"pill-gray";
+      return`
+        <div class="pipeline-group">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            ${pill(status,stCls)}
+            <span class="hint">${group.length} candidate${group.length!==1?"s":""}</span>
+          </div>
+          ${group.map(r=>{
+            const last=r.statusHistory?.[r.statusHistory.length-1];
+            return`
+              <div class="pipeline-item">
+                <div class="pipeline-item-info">
+                  <div class="pipeline-item-name">${r.candidateName}</div>
+                  <div class="pipeline-item-sub">
+                    ${(r.buckets||[]).map(b=>`<span class="pill pill-purple pill-xs">${b}</span>`).join("")}
+                    <span>Since ${fmtDate(last?.timestamp)}</span>
+                  </div>
+                </div>
+                <select data-status-id="${r.id}" style="width:auto;font-size:12px">
+                  ${STATUSES.map(s=>`<option value="${s}"${r.status===s?" selected":""}>${s}</option>`).join("")}
+                </select>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }).join("")}
+  `;
+}
+
+// ─── Buckets view ─────────────────────────────────────────────────
+function renderBuckets(){
+  return`
+    <div class="page-header">
+      <div>
+        <h1>Domain buckets</h1>
+        <p class="muted" style="margin-top:4px">Configure the talent categories for your organisation</p>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <h3 style="margin-bottom:12px">Add new bucket</h3>
+      <div class="form-row">
+        <input id="new-bucket-input" placeholder="e.g. DevOps, Security, Data Engineering" style="flex:1"/>
+        <button id="btn-add-bucket" class="btn-primary" style="flex-shrink:0">Add</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${state.buckets.map(b=>{
+        const count=state.resumes.filter(r=>r.buckets?.includes(b)).length;
+        return`
+          <div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 16px">
+            <span style="flex:1;font-weight:500">${b}</span>
+            <span class="hint">${count} candidate${count!==1?"s":""}</span>
+            <button data-delete-bucket="${b}" class="btn-ghost btn-danger" style="font-size:12px;padding:4px 10px">Remove</button>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+// ─── Event handlers ────────────────────────────────────────────────
+function attachHandlers(){
+  // Nav
+  document.querySelectorAll(".nav-tab[data-nav]").forEach(el=>{
+    el.addEventListener("click",()=>{state.nav=el.dataset.nav;render()});
+  });
+
+  // Library
+  const btnDemo=document.getElementById("btn-demo");
+  if(btnDemo)btnDemo.addEventListener("click",loadDemo);
+
+  const fileInput=document.getElementById("file-input");
+  if(fileInput)fileInput.addEventListener("change",e=>{handleUpload(Array.from(e.target.files));e.target.value=""});
+
+  document.querySelectorAll("[data-expand]").forEach(el=>{
+    el.addEventListener("click",()=>{state.expanded=state.expanded===el.dataset.expand?null:el.dataset.expand;render()});
+  });
+
+  document.querySelectorAll("[data-result-expand]").forEach(el=>{
+    el.addEventListener("click",()=>{state.resultExpanded=state.resultExpanded===el.dataset.resultExpand?null:el.dataset.resultExpand;render()});
+  });
+
+  document.querySelectorAll(".tab[data-tab]").forEach(el=>{
+    el.addEventListener("click",()=>{state.tab=el.dataset.tab;render()});
+  });
+
+  document.querySelectorAll("[data-status-id]").forEach(sel=>{
+    sel.addEventListener("change",async e=>{e.stopPropagation();await updateStatus(sel.dataset.statusId,sel.value)});
+  });
+
+  document.querySelectorAll("[data-add-bucket]").forEach(sel=>{
+    sel.addEventListener("change",async e=>{
+      if(!sel.value)return;
+      const r=state.resumes.find(r=>r.id===sel.dataset.addBucket);
+      if(!r)return;
+      const newBuckets=[...(r.buckets||[]),sel.value];
+      await updateBuckets(r.id,newBuckets);
+      state.resumes=state.resumes.map(res=>res.id===r.id?{...res,buckets:newBuckets}:res);
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-remove-bucket]").forEach(el=>{
+    el.addEventListener("click",async e=>{
+      e.stopPropagation();
+      const r=state.resumes.find(r=>r.id===el.dataset.removeBucket);
+      if(!r)return;
+      const newBuckets=(r.buckets||[]).filter(b=>b!==el.dataset.bucket);
+      await updateBuckets(r.id,newBuckets);
+      state.resumes=state.resumes.map(res=>res.id===r.id?{...res,buckets:newBuckets}:res);
+      render();
+    });
+  });
+
+  // Batch
+  const btnBatch=document.getElementById("btn-process-batch");
+  if(btnBatch)btnBatch.addEventListener("click",processBatch);
+
+  // Search
+  const btnSearch=document.getElementById("btn-search");
+  if(btnSearch)btnSearch.addEventListener("click",()=>{
+    state.searchJD=document.getElementById("search-jd")?.value||"";
+    state.searchTitle=document.getElementById("search-title")?.value||"";
+    searchByJD();
+  });
+
+  const searchJDInput=document.getElementById("search-jd");
+  if(searchJDInput)searchJDInput.addEventListener("input",e=>{state.searchJD=e.target.value});
+
+  const searchTitleInput=document.getElementById("search-title");
+  if(searchTitleInput)searchTitleInput.addEventListener("input",e=>{state.searchTitle=e.target.value});
+
+  // Buckets
+  const btnAddBucket=document.getElementById("btn-add-bucket");
+  if(btnAddBucket)btnAddBucket.addEventListener("click",async()=>{
+    const val=document.getElementById("new-bucket-input")?.value?.trim();
+    if(!val||state.buckets.includes(val))return;
+    state.buckets=[...state.buckets,val];
+    await saveBuckets();
+    render();
+  });
+
+  document.querySelectorAll("[data-delete-bucket]").forEach(el=>{
+    el.addEventListener("click",async()=>{
+      const b=el.dataset.deleteBucket;
+      if(!confirm(`Remove bucket "${b}"? Resumes assigned to it will lose this tag.`))return;
+      state.buckets=state.buckets.filter(x=>x!==b);
+      state.resumes=state.resumes.map(r=>({...r,buckets:(r.buckets||[]).filter(x=>x!==b)}));
+      await saveBuckets();
+      await saveResumes();
+      render();
+    });
+  });
+}
+
+async function processBatch(){
+  state.processingBatch=true;
+  render();
+  for(let i=0;i<state.batchQueue.length;i++){
+    const item=state.batchQueue[i];
+    state.batchQueue[i]={...item,status:"processing"};
+    render();
+    try{
+      const text=await extractPdfText(item.file);
+      let catResult={candidateName:item.filename.replace(".pdf",""),suggestedBuckets:[],primaryDomain:""};
+      try{
+        const r=await fetch("/api/categorise",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({resumeText:text,buckets:state.buckets})});
+        if(r.ok)catResult=await r.json();
+      }catch(e){}
+      const resume={
+        id:`r${Date.now()}_${i}`,
+        candidateName:catResult.candidateName||item.filename.replace(".pdf",""),
+        filename:item.filename,
+        buckets:catResult.suggestedBuckets||[],
+        primaryDomain:catResult.primaryDomain||"",
+        status:"Applied",
+        uploadedAt:new Date().toISOString(),
+        resumeText:text,
+        statusHistory:[{status:"Applied",timestamp:new Date().toISOString()}],
+        score:null
+      };
+      state.resumes=[...state.resumes,resume];
+      state.batchQueue[i]={...state.batchQueue[i],status:"done"};
+      await saveResumes();
+    }catch(e){
+      state.batchQueue[i]={...state.batchQueue[i],status:"failed"};
+    }
+    render();
+  }
+  state.processingBatch=false;
+  setTimeout(()=>{state.batchQueue=[];render()},3000);
+  showToast("Batch processing complete");
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────
+loadData().then(()=>render());
+</script>
+</body>
+</html>
