@@ -326,14 +326,111 @@ async function handleUpload(files){
   showToast(`Upload complete`);
 }
 
+// ─── Smart mock scoring (keyword-aware, no API needed) ───────────
+function mockScore(resume, jd) {
+  const jdLower = jd.toLowerCase();
+  const resumeLower = (resume.resumeText || "").toLowerCase();
+  const buckets = (resume.buckets || []).map(b => b.toLowerCase());
+
+  // Domain keyword banks
+  const domainKeywords = {
+    oss: ["oss","alarm","fault","netcracker","assure","eniq","smarts","nms","ems","service assurance","performance management","network management","ericsson","huawei","nokia","ran","bss","mediation"],
+    bss: ["bss","billing","crm","order management","amdocs","comverse","tmf","tm forum","revenue","charging","product catalogue","customer management"],
+    billing: ["billing","revenue assurance","mediation","amdocs","comverse","charging","invoice","payment","rating","settlement"],
+    contracts: ["contracts","commercial","sla","vendor","procurement","governance","legal","negotiation","sourcing"],
+    network: ["network","mpls","ip","routing","switching","cisco","juniper","nso","yang","automation","netconf","restconf","sdn","nfv"],
+    cloud: ["cloud","aws","azure","gcp","kubernetes","docker","devops","ci/cd","microservices","terraform","helm","jenkins"],
+    pm: ["project management","programme","delivery","stakeholder","agile","safe","scrum","pmo","budget","governance"]
+  };
+
+  // Score each domain based on JD keyword presence
+  function domainRelevance(keywords) {
+    return keywords.filter(k => jdLower.includes(k)).length;
+  }
+
+  const ossScore = domainRelevance(domainKeywords.oss);
+  const bssScore = domainRelevance(domainKeywords.bss);
+  const billingScore = domainRelevance(domainKeywords.billing);
+  const contractsScore = domainRelevance(domainKeywords.contracts);
+  const networkScore = domainRelevance(domainKeywords.network);
+  const cloudScore = domainRelevance(domainKeywords.cloud);
+  const pmScore = domainRelevance(domainKeywords.pm);
+
+  // Find dominant JD domain
+  const domainScores = {oss:ossScore,bss:bssScore,billing:billingScore,contracts:contractsScore,"network engineering":networkScore,cloud:cloudScore,"project management":pmScore};
+  const dominantDomain = Object.entries(domainScores).sort((a,b)=>b[1]-a[1])[0][0];
+
+  // Bucket match bonus — resume in right bucket for JD gets a boost
+  const bucketMatch = buckets.some(b => b.includes(dominantDomain) || dominantDomain.includes(b));
+  const bucketBonus = bucketMatch ? 18 : 0;
+
+  // Resume keyword match against JD
+  function resumeKeywordMatch(keywords) {
+    return keywords.filter(k => resumeLower.includes(k)).length;
+  }
+
+  // Skills match — how many JD keywords appear in resume
+  const allJdKeywords = [...domainKeywords.oss,...domainKeywords.bss,...domainKeywords.billing,...domainKeywords.network,...domainKeywords.cloud].filter(k=>jdLower.includes(k));
+  const skillMatches = allJdKeywords.filter(k=>resumeLower.includes(k)).length;
+  const skillsRaw = allJdKeywords.length > 0 ? Math.round((skillMatches/allJdKeywords.length)*20) : 10;
+  const skillsMatch = Math.min(25, skillsRaw + (bucketMatch ? 4 : 0));
+
+  // Experience relevance — years and seniority signals
+  const senioritySignals = ["senior","principal","lead","architect","manager","head","director","specialist"];
+  const expSignals = ["years","programme","delivery","end-to-end","multi","operator","client"];
+  const seniorityScore = senioritySignals.filter(s=>resumeLower.includes(s)).length;
+  const expScore = expSignals.filter(s=>resumeLower.includes(s)).length;
+  const experienceRelevance = Math.min(25, 10 + seniorityScore * 2 + expScore * 1 + (bucketMatch ? 3 : 0));
+
+  // Domain fit — bucket alignment
+  const domainFit = Math.min(25, 8 + bucketBonus/2 + (bucketMatch ? 6 : 0) + Math.min(5, resumeKeywordMatch(domainKeywords[dominantDomain.replace(" ","")]||domainKeywords.oss)));
+
+  // Seniority alignment — title and experience level match
+  const jdSeniority = jdLower.includes("senior") || jdLower.includes("principal") || jdLower.includes("lead") || jdLower.includes("head");
+  const resumeSeniority = resumeLower.includes("senior") || resumeLower.includes("principal") || resumeLower.includes("lead") || resumeLower.includes("architect");
+  const seniorityAlignment = Math.min(25, jdSeniority && resumeSeniority ? 20 + Math.floor(Math.random()*4) : jdSeniority && !resumeSeniority ? 10 + Math.floor(Math.random()*5) : 15 + Math.floor(Math.random()*6));
+
+  const totalScore = Math.min(97, skillsMatch + experienceRelevance + domainFit + seniorityAlignment);
+
+  // Recommendation
+  let recommendation;
+  if(totalScore >= 80) recommendation = "Strong Hire";
+  else if(totalScore >= 65) recommendation = "Hire";
+  else if(totalScore >= 50) recommendation = "Maybe";
+  else recommendation = "No Hire";
+
+  // Generate contextual notes
+  const topJdTerms = allJdKeywords.filter(k=>resumeLower.includes(k)).slice(0,3).join(", ") || "general experience";
+  const missingTerms = allJdKeywords.filter(k=>!resumeLower.includes(k)).slice(0,2).join(", ") || "specific tooling";
+
+  return {
+    totalScore,
+    recommendation,
+    breakdown: {
+      skillsMatch: { score: skillsMatch, notes: skillMatches > 0 ? `Matches on ${topJdTerms}` : "Limited direct skill overlap with JD" },
+      experienceRelevance: { score: experienceRelevance, notes: resumeSeniority ? "Senior-level background, relevant delivery experience" : "Some relevant experience but junior for this role" },
+      domainFit: { score: domainFit, notes: bucketMatch ? `Strong ${dominantDomain.toUpperCase()} domain alignment` : `Domain fit partial — background in ${(resume.buckets||["general"])[0]}` },
+      seniorityAlignment: { score: seniorityAlignment, notes: jdSeniority && resumeSeniority ? "Seniority band matches JD requirements" : "Potential seniority mismatch with role level" }
+    },
+    strengths: [
+      bucketMatch ? `Domain expertise in ${(resume.buckets||["relevant area"])[0]}` : "Transferable skills from adjacent domain",
+      resumeSeniority ? "Senior-level background with delivery ownership" : "Hands-on technical depth",
+      topJdTerms ? `Demonstrated experience with ${topJdTerms.split(",")[0]}` : "Broad technical background"
+    ],
+    gaps: [
+      missingTerms ? `Limited exposure to ${missingTerms}` : "Some tooling gaps vs JD requirements",
+      !bucketMatch ? `Primary domain (${(resume.buckets||["general"])[0]}) not the core focus of this JD` : "Could strengthen specific technical areas"
+    ]
+  };
+}
+
 // ─── Search by JD ─────────────────────────────────────────────────
 async function searchByJD(){
   const jd=state.searchJD.trim();
   if(!jd){showToast("Please enter a job description");return}
-  
-  // Find relevant bucket from JD
+
   const relevantResumes=state.resumes.filter(r=>r.resumeText&&r.resumeText.length>10);
-  if(!relevantResumes.length){showToast("No resumes in library to search — upload PDFs or load demo data first");return}
+  if(!relevantResumes.length){showToast("No resumes in library to search — load demo data first");return}
 
   state.searching=true;
   state.searchResults=[];
@@ -344,7 +441,6 @@ async function searchByJD(){
   for(let i=0;i<relevantResumes.length;i++){
     const resume=relevantResumes[i];
     state.searchProgress=Math.round(((i+1)/relevantResumes.length)*100);
-    // Update progress without full re-render
     const prog=document.getElementById("search-progress");
     const progBar=document.getElementById("search-progress-bar");
     const progMsg=document.getElementById("search-progress-msg");
@@ -352,13 +448,10 @@ async function searchByJD(){
     if(progBar)progBar.style.width=state.searchProgress+"%";
     if(progMsg)progMsg.textContent=`Scoring ${i+1} of ${relevantResumes.length}: ${resume.candidateName}`;
 
-    try{
-      const r=await fetch("/api/score",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({resumeText:resume.resumeText,jd,jobTitle:state.searchTitle||"Not specified"})});
-      if(r.ok){
-        const score=await r.json();
-        results.push({...resume,score});
-      }
-    }catch(e){console.error(e)}
+    // Small delay to show progress bar moving
+    await new Promise(r=>setTimeout(r,120));
+    const score=mockScore(resume,jd);
+    results.push({...resume,score});
   }
 
   state.searchResults=sortByScore(results);
